@@ -4,9 +4,31 @@
     <base href="https://cdn.jsdelivr.net/gh/Katsugachi/silksong@master/">
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity Web Player | Hollow Knight SilkSong</title>
+    <title>SilkSong</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
+    <style>
+      /* Force white everything, override rainbow gradient from external style.css */
+      #unity-progress-bar-full {
+        background: #ffffff !important;
+        background-image: none !important;
+      }
+      #unity-progress-bar-empty {
+        background: rgba(255,255,255,0.2) !important;
+        background-image: none !important;
+      }
+      body {
+        background-color: #1a1a1a !important;
+        margin: 0;
+      }
+      #loading-text {
+        color: #ffffff !important;
+        background: none !important;
+        -webkit-background-clip: unset !important;
+        background-clip: unset !important;
+        -webkit-text-fill-color: #ffffff !important;
+      }
+    </style>
   </head>
   <body>
     <div id="loading-text" style="color: white; font-size: 48px; font-family: cursive; text-align: center; margin-top: 20px;"> LOADING...</div>
@@ -24,7 +46,7 @@
 
 <script>
 const loadingText = document.querySelector("#loading-text");
-const CACHE_NAME = "hksilksongcache-v2"; // bump version if needed
+const CACHE_NAME = "hksilksongcache-v2";
 
 /* ================= FETCH OVERRIDE ================= */
 const originalFetch = window.fetch;
@@ -52,7 +74,6 @@ async function isCached() {
 
 async function cleanupOldCaches() {
   const cacheNames = await caches.keys();
-
   await Promise.all(
     cacheNames.map(name => {
       if (name !== CACHE_NAME && name.includes("hksilksong")) {
@@ -92,16 +113,13 @@ async function unzipAndStore(zipBlob) {
       }
 
       processed++;
-      loadingText.textContent =
-        `EXTRACTING ASSETS... (${processed}/${total})`;
+      loadingText.textContent = `EXTRACTING ASSETS... (${processed}/${total})`;
     }));
 
     await new Promise(r => setTimeout(r, 0));
   }
 
-  // ✅ mark cache complete
   await cache.put("CACHE_COMPLETE", new Response("ok"));
-
   console.log("Cache complete");
 }
 
@@ -130,8 +148,7 @@ async function fetchWithProgress(url) {
     let mbDone = (loadedBytes / (1024 * 1024)).toFixed(2);
     let mbTotal = '1986.64';
 
-    loadingText.textContent =
-      `DOWNLOADING ASSETS... (${mbDone} MB / ${mbTotal} MB)`;
+    loadingText.textContent = `DOWNLOADING ASSETS... (${mbDone} MB / ${mbTotal} MB)`;
   }
 
   let fullBuffer = new Uint8Array(received);
@@ -148,11 +165,7 @@ async function fetchWithProgress(url) {
 /* ================= MERGE ================= */
 async function mergeFiles(parts) {
   console.log("Downloading parts:", parts.length);
-
-  const buffers = await Promise.all(
-    parts.map(part => fetchWithProgress(part))
-  );
-
+  const buffers = await Promise.all(parts.map(part => fetchWithProgress(part)));
   return new Blob(buffers);
 }
 
@@ -168,14 +181,10 @@ function getParts(file, start, end) {
 /* ================= MAIN ================= */
 (async () => {
   try {
-    await cleanupOldCaches(); 
+    await cleanupOldCaches();
     if (!(await isCached())) {
       loadingText.textContent = "DOWNLOADING ASSETS...";
-
-      const webglzip = await mergeFiles(
-        getParts("StreamingAssets/aa/WebGL.zip", 1, 100)
-      );
-
+      const webglzip = await mergeFiles(getParts("StreamingAssets/aa/WebGL.zip", 1, 100));
       await unzipAndStore(webglzip);
     } else {
       loadingText.textContent = "LOADING FROM CACHE...";
@@ -189,8 +198,7 @@ function getParts(file, start, end) {
 
     function unityShowBanner(msg, type) {
       function update() {
-        warningBanner.style.display =
-          warningBanner.children.length ? 'block' : 'none';
+        warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
       }
 
       let div = document.createElement('div');
@@ -219,7 +227,7 @@ function getParts(file, start, end) {
       frameworkUrl: buildUrl + "/w-pt.framework.js.unityweb",
       codeUrl: buildUrl + "/w-pt.wasm.unityweb",
       streamingAssetsUrl: "StreamingAssets",
-      companyName: "",
+      companyName: "Solus MS",
       productName: "Hollow Knight SilkSong",
       productVersion: "1.0",
       showBanner: unityShowBanner,
@@ -228,7 +236,7 @@ function getParts(file, start, end) {
     loadingBar.style.display = "block";
 
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/gh//gh/Katsugachi/silksong@latest/Build/w-pt.loader.js";
+    script.src = "https://cdn.jsdelivr.net/gh/web-ports/hollow-knight-silksong@latest/Build/w-pt.loader.js";
 
     script.onload = () => {
       createUnityInstance(canvas, config, (progress) => {
